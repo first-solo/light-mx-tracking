@@ -1,0 +1,11 @@
+{
+  "name": "Aircraft Logs",
+  "short_name": "Logs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b2326",
+  "theme_color": "#1b2326",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

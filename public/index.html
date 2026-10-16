@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2326">
+<title>Aircraft Logs</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- PIN screen -->
+<main id="lock" class="lock" hidden>
+  <form id="pinForm" class="lock-card" autocomplete="off">
+    <div class="eyebrow">Aircraft logs</div>
+    <h1>Enter PIN</h1>
+    <p class="muted">The PIN opens the logs for one aircraft.</p>
+    <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" placeholder="••••" aria-label="PIN" required>
+    <button type="submit" class="primary" id="pinBtn">Unlock</button>
+    <p class="msg err" id="pinMsg" role="alert"></p>
+  </form>
+</main>
+
+<!-- App -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-inner">
+      <div class="ident">
+        <span class="tail" id="tail"></span>
+        <span class="model muted" id="model"></span>
+      </div>
+      <nav class="tabs" aria-label="Logs">
+        <a href="#oil" data-tab="oil">Oil</a>
+        <a href="#ad" data-tab="ad">AD 79-12-08</a>
+        <a href="#vor" data-tab="vor">VOR</a>
+      </nav>
+      <button class="ghost" id="logout">Lock</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- OIL -->
+    <section id="tab-oil" class="tab" hidden>
+      <div class="cards two" id="oil-cards">
+        <div class="card eng l" id="oil-sum-1"></div>
+        <div class="card eng r" id="oil-sum-2"></div>
+      </div>
+
+      <form class="panel" id="oilForm" novalidate>
+        <h2>Log oil added</h2>
+        <div class="grid g4">
+          <div class="f"><label for="oil-date">Date</label><input type="date" id="oil-date" name="date" required></div>
+          <div class="f"><label for="oil-tach">Tach</label><input type="number" id="oil-tach" name="tach" step="0.1" min="0" inputmode="decimal"></div>
+          <div class="f span2"><label for="oil-by">Added by</label><input id="oil-by" name="performed_by" class="who" placeholder="Name or initials" autocomplete="name"></div>
+        </div>
+        <div class="grid g2" id="oil-engines">
+          <fieldset class="eng l" id="oil-e1">
+            <legend id="oil-e1-name">Left engine</legend>
+            <div class="f"><label for="oil-1r">Initial reading (qt)</label><input type="number" id="oil-1r" name="e1_reading" step="0.25" min="0" inputmode="decimal"></div>
+            <div class="f"><label for="oil-1a">Added (qt)</label><input type="number" id="oil-1a" name="e1_added" step="0.25" min="0" inputmode="decimal"></div>
+          </fieldset>
+          <fieldset class="eng r" id="oil-e2">
+            <legend>Right engine</legend>
+            <div class="f"><label for="oil-2r">Initial reading (qt)</label><input type="number" id="oil-2r" name="e2_reading" step="0.25" min="0" inputmode="decimal"></div>
+            <div class="f"><label for="oil-2a">Added (qt)</label><input type="number" id="oil-2a" name="e2_added" step="0.25" min="0" inputmode="decimal"></div>
+          </fieldset>
+        </div>
+        <div class="f"><label for="oil-note">Remarks</label><input id="oil-note" name="note" placeholder="Optional: oil type, leaks noticed"></div>
+        <div class="actions"><button type="submit" class="primary">Save entry</button><span class="msg" role="status"></span></div>
+      </form>
+
+      <section class="panel">
+        <div class="panel-head"><h2>Oil log</h2><a class="ghost btn" href="/api/oil/export.csv">Export CSV</a></div>
+        <div class="tablewrap">
+          <table>
+            <thead id="oil-head"></thead>
+            <tbody id="oil-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- AD -->
+    <section id="tab-ad" class="tab" hidden>
+      <div class="card status" id="ad-status"></div>
+
+      <form class="panel" id="adForm" novalidate>
+        <h2>Log fuel selector water check</h2>
+        <p class="muted small">AD 79-12-08 / Piper SL 851 Part B. After exposure to below-freezing temperatures, required before the first flight of each day and after each refueling.</p>
+        <div class="grid g4">
+          <div class="f"><label for="ad-date">Date</label><input type="date" id="ad-date" name="date" required></div>
+          <div class="f"><label for="ad-time">Time (local)</label><input type="time" id="ad-time" name="time"></div>
+          <div class="f span2"><label for="ad-by">Performed by</label><input id="ad-by" name="performed_by" class="who" placeholder="Name or initials" autocomplete="name"></div>
+        </div>
+        <div class="f">
+          <span class="lbl">Done for</span>
+          <div class="seg" role="radiogroup" aria-label="Done for">
+            <label><input type="radio" name="trigger" value="first_flight" checked><span>First flight of the day</span></label>
+            <label><input type="radio" name="trigger" value="after_refuel"><span>After refueling</span></label>
+          </div>
+        </div>
+        <div class="grid g2">
+          <fieldset class="eng l">
+            <legend>Left selector valve</legend>
+            <div class="seg wide" role="radiogroup" aria-label="Left result">
+              <label><input type="radio" name="left_result" value="clear" checked><span>No water</span></label>
+              <label><input type="radio" name="left_result" value="water_drained"><span>Water found, drained</span></label>
+            </div>
+          </fieldset>
+          <fieldset class="eng r">
+            <legend>Right selector valve</legend>
+            <div class="seg wide" role="radiogroup" aria-label="Right result">
+              <label><input type="radio" name="right_result" value="clear" checked><span>No water</span></label>
+              <label><input type="radio" name="right_result" value="water_drained"><span>Water found, drained</span></label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="f"><label for="ad-note">Remarks</label><input id="ad-note" name="note" placeholder="Optional: OAT, overnight low, how much water"></div>
+        <div class="actions"><button type="submit" class="primary">Save check</button><span class="msg" role="status"></span></div>
+      </form>
+
+      <section class="panel">
+        <div class="panel-head"><h2>AD 79-12-08 log</h2><a class="ghost btn" href="/api/ad/export.csv">Export CSV</a></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Date</th><th>Time</th><th>For</th><th class="sep l">Left valve</th><th class="r">Right valve</th><th class="sep">Performed by</th><th>Remarks</th><th></th></tr></thead>
+            <tbody id="ad-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- VOR -->
+    <section id="tab-vor" class="tab" hidden>
+      <div class="card status" id="vor-status"></div>
+
+      <form class="panel" id="vorForm" novalidate>
+        <h2>Log VOR check</h2>
+        <p class="muted small">14 CFR 91.171: required within the preceding 30 days for IFR. Record date, place, bearing error, and signature.</p>
+        <div class="f">
+          <span class="lbl">Method</span>
+          <div class="seg" role="radiogroup" aria-label="Method">
+            <label><input type="radio" name="method" value="vot" checked><span>VOT ±4°</span></label>
+            <label><input type="radio" name="method" value="ground"><span>Ground checkpoint ±4°</span></label>
+            <label><input type="radio" name="method" value="airborne"><span>Airborne checkpoint ±6°</span></label>
+            <label><input type="radio" name="method" value="dual"><span>Dual system 4° apart</span></label>
+          </div>
+        </div>
+        <div class="grid g4">
+          <div class="f"><label for="vor-date">Date</label><input type="date" id="vor-date" name="date" required></div>
+          <div class="f span3"><label for="vor-place">Place</label><input id="vor-place" name="place" placeholder="e.g. GEG VOT 111.0, or checkpoint description"></div>
+        </div>
+        <div class="grid g3">
+          <div class="f"><label for="vor-1" id="vor-1-lbl">VOR 1 error (°)</label><input type="number" id="vor-1" name="vor1" step="1" inputmode="decimal"></div>
+          <div class="f"><label for="vor-2" id="vor-2-lbl">VOR 2 error (°)</label><input type="number" id="vor-2" name="vor2" step="1" inputmode="decimal"></div>
+          <div class="f"><label for="vor-by">Signature (name)</label><input id="vor-by" name="performed_by" class="who" placeholder="Name and certificate no." autocomplete="name"></div>
+        </div>
+        <div class="f"><label for="vor-note">Remarks</label><input id="vor-note" name="note" placeholder="Optional"></div>
+        <div class="actions"><button type="submit" class="primary">Save check</button><span class="msg" role="status"></span></div>
+      </form>
+
+      <section class="panel">
+        <div class="panel-head"><h2>VOR check log</h2><a class="ghost btn" href="/api/vor/export.csv">Export CSV</a></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Date</th><th>Method</th><th>Place</th><th class="num sep">VOR 1</th><th class="num">VOR 2</th><th>Result</th><th class="sep">Signature</th><th>Remarks</th><th></th></tr></thead>
+            <tbody id="vor-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

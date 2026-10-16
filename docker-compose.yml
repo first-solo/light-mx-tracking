@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    image: light-mx-tracking
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: ${TZ:-America/Los_Angeles}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3000}:3000"
+    volumes:
+      - ./data:/data
