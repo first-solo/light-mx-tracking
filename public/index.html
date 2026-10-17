@@ -146,6 +146,22 @@
         </div>
       </form>
 
+      <form class="panel" id="adReport" novalidate>
+        <h2>Logbook report</h2>
+        <p class="muted small">A PDF of every sign-off in the period, with signatures and a certification block, to print and keep with the aircraft records.</p>
+        <div class="report-row">
+          <div class="f"><label for="rep-from">From</label><input type="date" id="rep-from" name="from" required></div>
+          <div class="f"><label for="rep-to">Through</label><input type="date" id="rep-to" name="to" required></div>
+          <div class="seg quick" aria-label="Quick ranges">
+            <button type="button" class="ghost" data-range="month">This month</button>
+            <button type="button" class="ghost" data-range="last">Last month</button>
+            <button type="button" class="ghost" data-range="season">Since Oct 1</button>
+          </div>
+          <a class="primary btn" id="rep-open" href="#" target="_blank" rel="noopener">Open PDF</a>
+        </div>
+        <span class="msg" role="status"></span>
+      </form>
+
       <section class="panel">
         <div class="panel-head"><h2>AD 79-12-08 log</h2><a class="ghost btn" href="/api/ad/export.csv">Export CSV</a></div>
         <div class="tablewrap">

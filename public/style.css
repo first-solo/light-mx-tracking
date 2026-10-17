@@ -173,3 +173,10 @@ td.na { color: var(--muted); }
 .sig-actions { display: flex; }
 img.sig-thumb { height: 40px; width: auto; max-width: 160px; background: #fff; border: 1px solid var(--line); border-radius: 3px; vertical-align: middle; display: block; }
 td.signer img { margin-bottom: 2px; }
+
+/* report controls */
+.report-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.report-row .f { width: 11.5rem; max-width: 100%; }
+.report-row .quick { gap: 6px; }
+.report-row .quick button { padding: 9px 10px; }
+@media (max-width: 600px) { .report-row .f { width: calc(50% - 6px); } }

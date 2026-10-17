@@ -375,6 +375,44 @@
       : empty(9, 'No sign-offs yet', 'Sign off above before the first flight of each day and after each refueling.');
   };
 
+  // ---------- AD logbook report ----------
+  // "Open PDF" is a real link kept pointed at the chosen dates, so it opens in
+  // a new tab everywhere, including phones that block script-opened windows.
+  function reportCheck() {
+    const from = $('rep-from').value, to = $('rep-to').value;
+    if (!from || !to) return 'Choose a start and end date.';
+    if (from > to) return 'The start date is after the end date.';
+    return '';
+  }
+  function updateReportLink() {
+    const msg = $('adReport').querySelector('.msg');
+    const err = reportCheck();
+    msg.className = err ? 'msg err' : 'msg';
+    msg.textContent = err;
+    $('rep-open').href = err ? '#' : `/api/ad/report.pdf?from=${$('rep-from').value}&to=${$('rep-to').value}`;
+  }
+  function setRange(kind) {
+    const now = new Date();
+    let from, to = localDate(now);
+    if (kind === 'month') from = localDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    if (kind === 'last') {
+      from = localDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+      to = localDate(new Date(now.getFullYear(), now.getMonth(), 0));
+    }
+    if (kind === 'season') {
+      // The cold season runs from October 1 of this year, or last year before October.
+      const y = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+      from = `${y}-10-01`;
+    }
+    $('rep-from').value = from; $('rep-to').value = to;
+    updateReportLink();
+  }
+  setRange('month');
+  document.querySelectorAll('#adReport [data-range]').forEach((b) => b.addEventListener('click', () => setRange(b.dataset.range)));
+  ['rep-from', 'rep-to'].forEach((id) => $(id).addEventListener('input', updateReportLink));
+  $('adReport').addEventListener('submit', (e) => e.preventDefault());
+  $('rep-open').addEventListener('click', (e) => { if (reportCheck()) { e.preventDefault(); updateReportLink(); } });
+
   // ---------- VOR ----------
   const methodName = { vot: 'VOT', ground: 'Ground checkpoint', airborne: 'Airborne checkpoint', dual: 'Dual system' };
   const limit = { vot: 4, ground: 4, airborne: 6, dual: 4 };

@@ -4,6 +4,7 @@ Small self-hosted logbook for the things that happen at the airplane between ins
 
 - **Oil** — date, tach, initial dipstick reading and quarts added per engine, who added it. Shows last reading and hours per quart for each engine.
 - **AD 79-12-08** — the fuel selector water-contamination check (Piper SL 851 Part B) required before the first flight of each day and after each refueling once the airplane has been exposed to below-freezing temperatures. Shows whether today's first-flight check is logged.
+  On the AD tab, **Logbook report** builds a PDF of every sign-off in a date range: summary counts, each entry with its signature, removed entries footnoted, and a certification block to sign before it goes in the aircraft records.
 - **VOR checks** — 14 CFR 91.171 record: date, place, method, bearing error per receiver, signature. Flags out-of-tolerance checks and shows the date the 30-day window runs out.
 
 Each aircraft has its own PIN. Entering a PIN opens that aircraft's logs; nobody picks the tail number. Each aircraft is defined with an engine count (1 or 2) and which of the AD and VOR logs apply. Oil is always on.

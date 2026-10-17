@@ -10,6 +10,7 @@ if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
 
 const db = require('./db');
 const auth = require('./auth');
+const { buildAdReport } = require('./report');
 
 const PORT = Number(process.env.PORT || 3000);
 const SECURE_COOKIE = process.env.COOKIE_SECURE !== 'false';
@@ -258,6 +259,26 @@ app.get('/api/:log/export.csv', auth.requireAircraft, (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${req.aircraft.tail}-${req.params.log}-log.csv"`);
   res.send(csv + '\r\n');
+});
+
+// Logbook report: every AD 79-12-08 sign-off in a date range, as a PDF.
+app.get('/api/ad/report.pdf', auth.requireAircraft, (req, res) => {
+  if (!req.aircraft.track_ad_79_12_08) return res.status(404).json({ error: 'That log isn’t turned on for this aircraft.' });
+  const { from, to } = req.query;
+  if (!isDate(String(from || '')) || !isDate(String(to || ''))) return res.status(400).json({ error: 'Choose a start and end date.' });
+  if (from > to) return res.status(400).json({ error: 'The start date is after the end date.' });
+  const rows = db.prepare(
+    `SELECT date, time, trigger, exposed, left_result, right_result, performed_by, note, signature FROM ad_checks
+     WHERE aircraft_id = ? AND deleted_at IS NULL AND date BETWEEN ? AND ?
+     ORDER BY date ASC, COALESCE(time, '99:99') ASC, id ASC LIMIT 5000`
+  ).all(req.aircraft.id, from, to);
+  const removedCount = db.prepare(
+    'SELECT COUNT(*) AS n FROM ad_checks WHERE aircraft_id = ? AND deleted_at IS NOT NULL AND date BETWEEN ? AND ?'
+  ).get(req.aircraft.id, from, to).n;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${req.aircraft.tail}-AD-79-12-08-${from}-to-${to}.pdf"`);
+  res.setHeader('Cache-Control', 'no-store');
+  buildAdReport({ aircraft: req.aircraft, from, to, rows, removedCount }, res);
 });
 
 app.get('/api/:log/:id/signature.png', auth.requireAircraft, (req, res) => {
