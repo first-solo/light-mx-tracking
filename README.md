@@ -32,18 +32,18 @@ logs.example.com {
 
 The first aircraft is created from the `INIT_*` values only when the database is empty. After the first start you can delete those lines from `.env`.
 
-Data lives in `./data/logs.db` (SQLite). Back up that folder.
+Data lives in `./data/logs.db` (SQLite). Back up that folder. The container creates `./data` and sets its ownership on start, so there's nothing to prepare on the host.
 
 ## Manage aircraft and PINs
 
 ```sh
-docker compose exec app npm run admin -- list
-docker compose exec app npm run admin -- add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
-docker compose exec app npm run admin -- add N12345 5150 --model C172 --engines 1 --no-vor
-docker compose exec app npm run admin -- set N7375Y --vor off
-docker compose exec app npm run admin -- set N7375Y --ad-79-12-08 on
-docker compose exec app npm run admin -- set-pin N7375Y 9930
-docker compose exec app npm run admin -- remove N12345
+docker compose exec -u node app npm run admin -- list
+docker compose exec -u node app npm run admin -- add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
+docker compose exec -u node app npm run admin -- add N12345 5150 --model C172 --engines 1 --no-vor
+docker compose exec -u node app npm run admin -- set N7375Y --vor off
+docker compose exec -u node app npm run admin -- set N7375Y --ad-79-12-08 on
+docker compose exec -u node app npm run admin -- set-pin N7375Y 9930
+docker compose exec -u node app npm run admin -- remove N12345
 ```
 
 - New aircraft default to 1 engine, VOR log on, AD 79-12-08 log off.

@@ -1,12 +1,12 @@
 'use strict';
 
 // Admin commands. Run inside the container, for example:
-//   docker compose exec app npm run admin -- list
-//   docker compose exec app npm run admin -- add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
-//   docker compose exec app npm run admin -- add N12345 5150 --model C172 --engines 1 --no-vor
-//   docker compose exec app npm run admin -- set N7375Y --vor off
-//   docker compose exec app npm run admin -- set-pin N7375Y 9930
-//   docker compose exec app npm run admin -- remove N12345
+//   docker compose exec -u node app npm run admin -- list
+//   docker compose exec -u node app npm run admin -- add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
+//   docker compose exec -u node app npm run admin -- add N12345 5150 --model C172 --engines 1 --no-vor
+//   docker compose exec -u node app npm run admin -- set N7375Y --vor off
+//   docker compose exec -u node app npm run admin -- set-pin N7375Y 9930
+//   docker compose exec -u node app npm run admin -- remove N12345
 
 const db = require('./db');
 const { hashPin, validPin, pinInUse } = require('./auth');
@@ -22,6 +22,11 @@ Defaults for a new aircraft: 1 engine, VOR log on, AD 79-12-08 log off.
 PINs are 4 to 8 digits, and each aircraft needs its own.`;
 
 function fail(msg) { console.error(msg); process.exit(1); }
+
+// Running as root would leave database files the app can't write to.
+if (process.getuid && process.getuid() === 0) {
+  fail('Run admin commands as the app user: docker compose exec -u node app npm run admin -- <command>');
+}
 
 // Split positional arguments from --flags. A flag takes the next word as its
 // value unless that word is another flag or the flag is a bare switch.
