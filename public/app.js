@@ -411,7 +411,14 @@
   document.querySelectorAll('#adReport [data-range]').forEach((b) => b.addEventListener('click', () => setRange(b.dataset.range)));
   ['rep-from', 'rep-to'].forEach((id) => $(id).addEventListener('input', updateReportLink));
   $('adReport').addEventListener('submit', (e) => e.preventDefault());
-  $('rep-open').addEventListener('click', (e) => { if (reportCheck()) { e.preventDefault(); updateReportLink(); } });
+  $('rep-open').addEventListener('click', (e) => {
+    if (reportCheck()) { e.preventDefault(); updateReportLink(); return; }
+    setTimeout(() => $('repDialog').close(), 0); // let the link open first
+  });
+  $('rep-show').addEventListener('click', () => { updateReportLink(); $('repDialog').showModal(); });
+  $('rep-close').addEventListener('click', () => $('repDialog').close());
+  // a tap on the dimmed backdrop closes it
+  $('repDialog').addEventListener('click', (e) => { if (e.target === $('repDialog')) $('repDialog').close(); });
 
   // ---------- VOR ----------
   const methodName = { vot: 'VOT', ground: 'Ground checkpoint', airborne: 'Airborne checkpoint', dual: 'Dual system' };

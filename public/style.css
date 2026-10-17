@@ -174,9 +174,12 @@ td.na { color: var(--muted); }
 img.sig-thumb { height: 40px; width: auto; max-width: 160px; background: #fff; border: 1px solid var(--line); border-radius: 3px; vertical-align: middle; display: block; }
 td.signer img { margin-bottom: 2px; }
 
-/* report controls */
-.report-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
-.report-row .f { width: 11.5rem; max-width: 100%; }
-.report-row .quick { gap: 6px; }
-.report-row .quick button { padding: 9px 10px; }
-@media (max-width: 600px) { .report-row .f { width: calc(50% - 6px); } }
+/* logbook report dialog */
+.head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+dialog#repDialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+dialog#repDialog::backdrop { background: rgba(12, 16, 19, 0.55); }
+#adReport { display: grid; gap: 14px; padding: 18px; }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dlg-head h2 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+#adReport .dates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#adReport .quick { display: flex; flex-wrap: wrap; gap: 6px; }
