@@ -137,16 +137,20 @@ const logs = {
   ad: {
     table: 'ad_checks',
     order: 'date DESC, time DESC, id DESC',
-    columns: ['date', 'time', 'trigger', 'left_result', 'right_result', 'performed_by', 'note'],
+    columns: ['date', 'time', 'trigger', 'exposed', 'left_result', 'right_result', 'performed_by', 'note'],
     enabled: (a) => !!a.track_ad_79_12_08,
     parse(b) {
+      const exposed = b.exposed === 'yes' || b.exposed === 1 || b.exposed === '1' || b.exposed === true ? 1
+        : b.exposed === 'no' || b.exposed === 0 || b.exposed === '0' || b.exposed === false ? 0
+        : (() => { throw new Bad('Answer whether the airplane was exposed to below-freezing temperatures.'); })();
       return {
         date: date(b.date),
         time: b.time ? (isTime(b.time) ? b.time : (() => { throw new Bad('Enter the time as HH:MM.'); })()) : null,
-        trigger: oneOf(b.trigger, 'when the check was done', ['first_flight', 'after_refuel']),
-        left_result: oneOf(b.left_result, 'the left valve result', ['clear', 'water_drained']),
-        right_result: oneOf(b.right_result, 'the right valve result', ['clear', 'water_drained']),
-        performed_by: text(b.performed_by, 'who did the check', { required: true, max: 60 }),
+        trigger: oneOf(b.trigger, 'whether this is for the first flight or after refueling', ['first_flight', 'after_refuel']),
+        exposed,
+        left_result: exposed ? oneOf(b.left_result, 'the left valve result', ['clear', 'water_drained']) : null,
+        right_result: exposed ? oneOf(b.right_result, 'the right valve result', ['clear', 'water_drained']) : null,
+        performed_by: text(b.performed_by, 'who is signing off', { required: true, max: 60 }),
         note: text(b.note, 'remarks', { max: 500 }),
       };
     },

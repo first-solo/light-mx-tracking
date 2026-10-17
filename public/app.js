@@ -146,7 +146,28 @@
   bindForm('adForm', 'ad', (f) => {
     f.querySelector('input[name=left_result][value=clear]').checked = true;
     f.querySelector('input[name=right_result][value=clear]').checked = true;
+    f.querySelectorAll('input[name=exposed]').forEach((r) => { r.checked = false; });
+    adStep();
   });
+
+  // AD sign-off: the exposure answer decides whether valve results are needed
+  // and what the signer is attesting to.
+  function adStep() {
+    const f = $('adForm');
+    const exp = f.querySelector('input[name=exposed]:checked');
+    const forFirst = f.querySelector('input[name=trigger]:checked').value === 'first_flight';
+    const when = forFirst ? 'before the first flight of the day' : 'after refueling';
+    $('ad-results').hidden = !exp || exp.value !== 'yes';
+    $('ad-sign').hidden = !exp;
+    if (!exp) return;
+    const did = exp.value === 'yes';
+    $('ad-sign-n').textContent = did ? '4' : '3';
+    $('ad-attest').textContent = did
+      ? `I performed the fuel selector valve water check per AD 79-12-08 ${when}, with the results recorded above.`
+      : `The airplane has not been exposed to below-freezing temperatures, so the AD 79-12-08 check is not required ${when}.`;
+    $('ad-submit').textContent = did ? 'Sign off: check performed' : 'Sign off: not required';
+  }
+  $('adForm').addEventListener('change', (e) => { if (['exposed', 'trigger'].includes(e.target.name)) adStep(); });
   bindForm('vorForm', 'vor', (f) => { f.querySelector('#vor-place').value = ''; });
 
   // VOR labels change for a dual-system check
@@ -239,26 +260,37 @@
     const water = todays.some((c) => c.left_result === 'water_drained' || c.right_result === 'water_drained');
     const last = state.ad[0];
     const el = $('ad-status');
-    el.className = 'card status ' + (first ? (water ? 'warn' : 'ok') : 'bad');
-    el.innerHTML = first
-      ? `<p class="headline">Today’s first-flight check is done</p>
-         <p>${first.time ? first.time + ' · ' : ''}${esc(first.performed_by)}${refuels.length ? ` · ${refuels.length} after-refuel check${refuels.length > 1 ? 's' : ''} logged today` : ''}</p>
-         ${water ? '<p><strong>Water was found and drained today.</strong> Check the remarks.</p>' : ''}`
-      : `<p class="headline">No first-flight check logged today</p>
-         <p class="muted">If the airplane has been exposed to below-freezing temperatures, do the check before the first flight and after each refueling.${last ? ` Last logged ${fmtDate(last.date)} by ${esc(last.performed_by)}.` : ''}</p>`;
+    const extra = refuels.length ? ` · ${refuels.length} after-refuel sign-off${refuels.length > 1 ? 's' : ''} today` : '';
+    const who = (c) => `${c.time ? c.time + ' · ' : ''}${esc(c.performed_by)}`;
+    if (!first) {
+      el.className = 'card status bad';
+      el.innerHTML = `<p class="headline">No first-flight sign-off today</p>
+        <p class="muted">Before the first flight, either do the check or sign off that the airplane hasn’t been exposed to below-freezing temperatures.${last ? ` Last sign-off ${fmtDate(last.date)} by ${esc(last.performed_by)}.` : ''}</p>`;
+    } else if (first.exposed) {
+      el.className = 'card status ' + (water ? 'warn' : 'ok');
+      el.innerHTML = `<p class="headline">Today’s first-flight check is done</p>
+        <p>${who(first)}${extra}</p>
+        ${water ? '<p><strong>Water was found and drained today.</strong> Check the remarks.</p>' : ''}`;
+    } else {
+      el.className = 'card status ' + (water ? 'warn' : 'ok');
+      el.innerHTML = `<p class="headline">Signed off today: no freezing exposure</p>
+        <p>Check not required before the first flight · ${who(first)}${extra}</p>
+        ${water ? '<p><strong>Water was found and drained on a later check today.</strong> Check the remarks.</p>' : ''}`;
+    }
 
     $('ad-rows').innerHTML = state.ad.length ? state.ad.map((c) => `
       <tr>
         <td>${fmtDate(c.date)}</td>
         <td class="num">${esc(c.time) || '—'}</td>
         <td>${trig[c.trigger]}</td>
-        <td class="sep">${res(c.left_result)}</td>
-        <td>${res(c.right_result)}</td>
+        ${c.exposed
+          ? `<td class="sep">Yes</td><td>${res(c.left_result)}</td><td>${res(c.right_result)}</td>`
+          : `<td class="sep">No</td><td colspan="2" class="na">Not required</td>`}
         <td class="sep">${esc(c.performed_by)}</td>
         <td class="note">${esc(c.note)}</td>
         <td>${deleteCell('ad', c.id)}</td>
       </tr>`).join('')
-      : empty(8, 'No checks logged yet', 'Log each fuel selector water check above when it’s done.');
+      : empty(9, 'No sign-offs yet', 'Sign off above before the first flight of each day and after each refueling.');
   };
 
   // ---------- VOR ----------

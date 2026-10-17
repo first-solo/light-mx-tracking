@@ -73,6 +73,34 @@ const migrations = [
   CREATE INDEX ad_by_aircraft  ON ad_checks(aircraft_id, date);
   CREATE INDEX vor_by_aircraft ON vor_checks(aircraft_id, date);
   `,
+
+  // 2: AD 79-12-08 entries record a decision. exposed = 1 means the airplane saw
+  // below-freezing temperatures and the check was done (valve results required);
+  // exposed = 0 is a sign-off that the check wasn't required. Existing entries
+  // were all performed checks.
+  `
+  CREATE TABLE ad_checks_new (
+    id            INTEGER PRIMARY KEY,
+    aircraft_id   INTEGER NOT NULL REFERENCES aircraft(id),
+    date          TEXT NOT NULL,
+    time          TEXT,
+    trigger       TEXT NOT NULL CHECK (trigger IN ('first_flight', 'after_refuel')),
+    exposed       INTEGER NOT NULL CHECK (exposed IN (0, 1)),
+    left_result   TEXT CHECK (left_result IN ('clear', 'water_drained')),
+    right_result  TEXT CHECK (right_result IN ('clear', 'water_drained')),
+    performed_by  TEXT NOT NULL,
+    note          TEXT,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at    TEXT,
+    CHECK ((exposed = 1 AND left_result IS NOT NULL AND right_result IS NOT NULL)
+        OR (exposed = 0 AND left_result IS NULL AND right_result IS NULL))
+  );
+  INSERT INTO ad_checks_new (id, aircraft_id, date, time, trigger, exposed, left_result, right_result, performed_by, note, created_at, deleted_at)
+    SELECT id, aircraft_id, date, time, trigger, 1, left_result, right_result, performed_by, note, created_at, deleted_at FROM ad_checks;
+  DROP TABLE ad_checks;
+  ALTER TABLE ad_checks_new RENAME TO ad_checks;
+  CREATE INDEX ad_by_aircraft ON ad_checks(aircraft_id, date);
+  `,
 ];
 
 db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');

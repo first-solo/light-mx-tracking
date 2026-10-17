@@ -157,3 +157,9 @@ td.empty strong { display: block; color: var(--ink); font-family: var(--display)
   .tabs { order: 3; flex-basis: 100%; }
   .tabs a { flex: 1; text-align: center; }
 }
+
+/* AD decision steps */
+.step { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.step .lbl b { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 6px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 12px; letter-spacing: 0; }
+.attest { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--field); border: 1px solid var(--line); font-size: 14px; }
+td.na { color: var(--muted); }
