@@ -40,13 +40,13 @@ Data lives in `./data/logs.db` (SQLite). Back up that folder. The container crea
 ## Manage aircraft and PINs
 
 ```sh
-docker compose exec -u node app npm run admin -- list
-docker compose exec -u node app npm run admin -- add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
-docker compose exec -u node app npm run admin -- add N12345 5150 --model C172 --engines 1 --no-vor
-docker compose exec -u node app npm run admin -- set N7375Y --vor off
-docker compose exec -u node app npm run admin -- set N7375Y --ad-79-12-08 on
-docker compose exec -u node app npm run admin -- set-pin N7375Y 9930
-docker compose exec -u node app npm run admin -- remove N12345
+docker compose exec app mx-admin list
+docker compose exec app mx-admin add N7375Y 4821 --model PA-30 --engines 2 --ad-79-12-08
+docker compose exec app mx-admin add N12345 5150 --model C172 --engines 1 --no-vor
+docker compose exec app mx-admin set N7375Y --vor off
+docker compose exec app mx-admin set N7375Y --ad-79-12-08 on
+docker compose exec app mx-admin set-pin N7375Y 9930
+docker compose exec app mx-admin remove N12345
 ```
 
 - New aircraft default to 1 engine, VOR log on, AD 79-12-08 log off.
@@ -54,6 +54,31 @@ docker compose exec -u node app npm run admin -- remove N12345
 - Changing a PIN signs out every device using the old one.
 - Turning a log off hides it; existing entries are kept and come back if you turn it on again.
 - An aircraft with log entries can't be removed. A twin with right-engine oil data can't be switched to a single.
+
+## Deploy on Railway
+
+`railway.json` sets up the Dockerfile build and a `/healthz` health check.
+
+1. **New project → Deploy from GitHub repo →** `first-solo/light-mx-tracking`.
+2. **Add a volume** to the service with mount path `/data`. Without it the database is wiped on every deploy.
+3. **Variables:**
+
+   | Variable | Value |
+   |---|---|
+   | `SESSION_SECRET` | output of `openssl rand -hex 32` |
+   | `INIT_TAIL` / `INIT_MODEL` / `INIT_ENGINES` | `N7375Y` / `PA-30` / `2` |
+   | `INIT_AD_79_12_08` | `true` |
+   | `INIT_PIN` | the first aircraft's PIN (delete this variable after the first successful deploy) |
+   | `TRUST_PROXY` | `1` |
+   | `TZ` | `America/Los_Angeles` |
+
+   Railway supplies `PORT`; the app uses it.
+4. **Custom domain:** Settings → Networking → Custom Domain. Add the CNAME Railway shows in your DNS. On Cloudflare, either leave the record DNS-only, or if it's proxied, keep SSL/TLS mode on Full (Flexible causes a redirect loop).
+5. Keep the service at **one replica**. SQLite lives on the volume, and the PIN rate limit is in memory.
+
+Admin commands on Railway: `railway ssh` into the service, then `mx-admin list` (same commands as above, without the `docker compose exec app` prefix).
+
+Turn on volume backups in the volume's settings.
 
 ## Security notes
 

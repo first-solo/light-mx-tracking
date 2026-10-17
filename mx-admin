@@ -1,0 +1,9 @@
+#!/bin/sh
+# Aircraft and PIN admin. Works from `docker compose exec app mx-admin ...`
+# and from `railway ssh`, which both open a root shell: it drops to the app
+# user so database files stay writable by the app.
+cd /app
+if [ "$(id -u)" = "0" ]; then
+  exec setpriv --reuid=node --regid=node --init-groups node src/cli.js "$@"
+fi
+exec node src/cli.js "$@"

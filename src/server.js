@@ -48,6 +48,12 @@ app.use((req, res, next) => {
 });
 // Browsers check back on every load (a cheap 304 when nothing changed), so an
 // update's page and script always arrive together.
+// Health check for Docker and Railway: up and able to read the database.
+app.get('/healthz', (req, res) => {
+  try { db.prepare('SELECT 1').get(); res.json({ ok: true }); }
+  catch { res.status(503).json({ ok: false }); }
+});
+
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   index: 'index.html',
   setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
