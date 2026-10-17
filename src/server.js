@@ -45,7 +45,12 @@ app.use((req, res, next) => {
     "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'");
   next();
 });
-app.use(express.static(path.join(__dirname, '..', 'public'), { index: 'index.html', maxAge: '1h' }));
+// Browsers check back on every load (a cheap 304 when nothing changed), so an
+// update's page and script always arrive together.
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  index: 'index.html',
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+}));
 
 // ---------- auth ----------
 
