@@ -133,10 +133,15 @@
           <div class="grid g4">
             <div class="f"><label for="ad-date">Date</label><input type="date" id="ad-date" name="date" required></div>
             <div class="f"><label for="ad-time">Time (local)</label><input type="time" id="ad-time" name="time"></div>
-            <div class="f span2"><label for="ad-by">Signed by</label><input id="ad-by" name="performed_by" class="who" placeholder="Name and certificate no." autocomplete="name"></div>
+            <div class="f span2"><label for="ad-by">Printed name</label><input id="ad-by" name="performed_by" class="who" placeholder="Name and certificate no." autocomplete="name"></div>
           </div>
           <div class="f"><label for="ad-note">Remarks</label><input id="ad-note" name="note" placeholder="Optional: OAT, overnight low, how much water"></div>
           <p class="attest" id="ad-attest"></p>
+          <div class="f sig">
+            <span class="lbl">Signature</span>
+            <div class="sigpad" data-log="ad"><canvas aria-label="Signature box. Sign with your finger or mouse."></canvas><span class="sig-hint">Sign here</span><span class="sig-line"></span></div>
+            <div class="sig-actions"><button type="button" class="ghost sig-clear">Clear signature</button></div>
+          </div>
           <div class="actions"><button type="submit" class="primary" id="ad-submit">Sign off</button><span class="msg" role="status"></span></div>
         </div>
       </form>
@@ -175,9 +180,14 @@
         <div class="grid g3">
           <div class="f"><label for="vor-1" id="vor-1-lbl">VOR 1 error (°)</label><input type="number" id="vor-1" name="vor1" step="1" inputmode="decimal"></div>
           <div class="f"><label for="vor-2" id="vor-2-lbl">VOR 2 error (°)</label><input type="number" id="vor-2" name="vor2" step="1" inputmode="decimal"></div>
-          <div class="f"><label for="vor-by">Signature (name)</label><input id="vor-by" name="performed_by" class="who" placeholder="Name and certificate no." autocomplete="name"></div>
+          <div class="f"><label for="vor-by">Printed name</label><input id="vor-by" name="performed_by" class="who" placeholder="Name and certificate no." autocomplete="name"></div>
         </div>
         <div class="f"><label for="vor-note">Remarks</label><input id="vor-note" name="note" placeholder="Optional"></div>
+        <div class="f sig">
+            <span class="lbl">Signature</span>
+            <div class="sigpad" data-log="vor"><canvas aria-label="Signature box. Sign with your finger or mouse."></canvas><span class="sig-hint">Sign here</span><span class="sig-line"></span></div>
+            <div class="sig-actions"><button type="button" class="ghost sig-clear">Clear signature</button></div>
+          </div>
         <div class="actions"><button type="submit" class="primary">Save check</button><span class="msg" role="status"></span></div>
       </form>
 

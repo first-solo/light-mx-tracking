@@ -101,6 +101,12 @@ const migrations = [
   ALTER TABLE ad_checks_new RENAME TO ad_checks;
   CREATE INDEX ad_by_aircraft ON ad_checks(aircraft_id, date);
   `,
+
+  // 3: hand-drawn signatures (PNG data URLs) on the sign-off logs.
+  `
+  ALTER TABLE ad_checks ADD COLUMN signature TEXT;
+  ALTER TABLE vor_checks ADD COLUMN signature TEXT;
+  `,
 ];
 
 db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');

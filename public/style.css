@@ -163,3 +163,13 @@ td.empty strong { display: block; color: var(--ink); font-family: var(--display)
 .step .lbl b { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 6px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 12px; letter-spacing: 0; }
 .attest { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--field); border: 1px solid var(--line); font-size: 14px; }
 td.na { color: var(--muted); }
+
+/* signature pad: always white "paper" with dark ink, in both themes */
+.sigpad { position: relative; height: 160px; max-width: 560px; background: #fff; border: 1px solid var(--line); border-radius: 4px; touch-action: none; }
+.sigpad canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.sigpad .sig-line { position: absolute; left: 16px; right: 16px; bottom: 36px; border-bottom: 1px solid #c9d1d4; pointer-events: none; }
+.sigpad .sig-hint { position: absolute; left: 18px; bottom: 42px; color: #9aa6ab; font-size: 13px; pointer-events: none; }
+.sigpad.signed .sig-hint { display: none; }
+.sig-actions { display: flex; }
+img.sig-thumb { height: 40px; width: auto; max-width: 160px; background: #fff; border: 1px solid var(--line); border-radius: 3px; vertical-align: middle; display: block; }
+td.signer img { margin-bottom: 2px; }

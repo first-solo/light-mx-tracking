@@ -8,6 +8,8 @@ Small self-hosted logbook for the things that happen at the airplane between ins
 
 Each aircraft has its own PIN. Entering a PIN opens that aircraft's logs; nobody picks the tail number. Each aircraft is defined with an engine count (1 or 2) and which of the AD and VOR logs apply. Oil is always on.
 
+AD and VOR sign-offs take a printed name plus a signature drawn with a finger (or mouse) on the page. The signature is stored with the entry as an image; the CSV export notes which entries are hand-signed.
+
 Entries are never hard-deleted. "Remove" hides an entry from the page; the CSV export still includes it with the time it was removed.
 
 > Confirm the AD 79-12-08 requirements against the current AD text and your aircraft's records. This app records that the check was done; it doesn't decide applicability.

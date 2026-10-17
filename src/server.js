@@ -36,7 +36,7 @@ if (process.env.INIT_TAIL && process.env.INIT_PIN) {
 const app = express();
 app.disable('x-powered-by');
 if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY);
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({ limit: '300kb' })); // room for a signature image
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -111,6 +111,17 @@ function oneOf(v, label, options) {
   if (!options.includes(v)) throw new Bad(`Choose ${label}.`);
   return v;
 }
+// A finger-drawn signature arrives as a PNG data URL. Stored as-is; served back
+// only as an image from its own route.
+const PNG_PREFIX = 'data:image/png;base64,';
+function signature(v) {
+  if (typeof v !== 'string' || !v.startsWith(PNG_PREFIX)) throw new Bad('Sign in the signature box.');
+  const bytes = Buffer.from(v.slice(PNG_PREFIX.length), 'base64');
+  if (bytes.length < 100 || bytes.length > 200 * 1024 || bytes.readUInt32BE(0) !== 0x89504e47) {
+    throw new Bad('The signature didn’t come through. Clear it and sign again.');
+  }
+  return PNG_PREFIX + bytes.toString('base64');
+}
 
 // ---------- log definitions ----------
 
@@ -144,6 +155,7 @@ const logs = {
     order: 'date DESC, time DESC, id DESC',
     columns: ['date', 'time', 'trigger', 'exposed', 'left_result', 'right_result', 'performed_by', 'note'],
     enabled: (a) => !!a.track_ad_79_12_08,
+    signed: true,
     parse(b) {
       const exposed = b.exposed === 'yes' || b.exposed === 1 || b.exposed === '1' || b.exposed === true ? 1
         : b.exposed === 'no' || b.exposed === 0 || b.exposed === '0' || b.exposed === false ? 0
@@ -157,6 +169,7 @@ const logs = {
         right_result: exposed ? oneOf(b.right_result, 'the right valve result', ['clear', 'water_drained']) : null,
         performed_by: text(b.performed_by, 'who is signing off', { required: true, max: 60 }),
         note: text(b.note, 'remarks', { max: 500 }),
+        signature: signature(b.signature),
       };
     },
   },
@@ -165,6 +178,7 @@ const logs = {
     order: 'date DESC, id DESC',
     columns: ['date', 'method', 'place', 'vor1', 'vor2', 'performed_by', 'note'],
     enabled: (a) => !!a.track_vor,
+    signed: true,
     // vor1/vor2 hold bearing errors (degrees) for VOT, ground and airborne checks,
     // and the indicated bearings from each receiver for a dual-system check.
     parse(b) {
@@ -184,6 +198,7 @@ const logs = {
         throw new Bad('A dual-system check needs the indicated bearing from both receivers.');
       }
       if (r.vor1 == null && r.vor2 == null) throw new Bad('Enter the bearing error for at least one receiver.');
+      r.signature = signature(b.signature);
       return r;
     },
   },
@@ -198,7 +213,7 @@ function logFor(req, res) {
 app.get('/api/:log', auth.requireAircraft, (req, res) => {
   const def = logFor(req, res); if (!def) return;
   const rows = db.prepare(
-    `SELECT id, ${def.columns.join(', ')}, created_at FROM ${def.table}
+    `SELECT id, ${def.columns.join(', ')}, created_at${def.signed ? ', signature IS NOT NULL AS signed' : ''} FROM ${def.table}
      WHERE aircraft_id = ? AND deleted_at IS NULL ORDER BY ${def.order} LIMIT 1000`
   ).all(req.aircraft.id);
   res.json(rows);
@@ -229,10 +244,10 @@ app.delete('/api/:log/:id', auth.requireAircraft, (req, res) => {
 app.get('/api/:log/export.csv', auth.requireAircraft, (req, res) => {
   const def = logFor(req, res); if (!def) return;
   const rows = db.prepare(
-    `SELECT ${def.columns.join(', ')}, created_at AS logged_at_utc, deleted_at AS removed_at_utc FROM ${def.table}
+    `SELECT ${def.columns.join(', ')},${def.signed ? " CASE WHEN signature IS NULL THEN 'no' ELSE 'yes' END AS hand_signed," : ''} created_at AS logged_at_utc, deleted_at AS removed_at_utc FROM ${def.table}
      WHERE aircraft_id = ? ORDER BY date ASC, id ASC`
   ).all(req.aircraft.id);
-  const head = [...def.columns, 'logged_at_utc', 'removed_at_utc'];
+  const head = [...def.columns, ...(def.signed ? ['hand_signed'] : []), 'logged_at_utc', 'removed_at_utc'];
   const cell = (v) => {
     if (v == null) return '';
     let s = String(v);
@@ -243,6 +258,16 @@ app.get('/api/:log/export.csv', auth.requireAircraft, (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${req.aircraft.tail}-${req.params.log}-log.csv"`);
   res.send(csv + '\r\n');
+});
+
+app.get('/api/:log/:id/signature.png', auth.requireAircraft, (req, res) => {
+  const def = logFor(req, res); if (!def) return;
+  const row = def.signed && db.prepare(`SELECT signature FROM ${def.table} WHERE id = ? AND aircraft_id = ?`)
+    .get(Number(req.params.id), req.aircraft.id);
+  if (!row || !row.signature) return res.status(404).json({ error: 'No signature for that entry.' });
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'private, max-age=31536000, immutable'); // a signed entry never changes
+  res.send(Buffer.from(row.signature.slice(PNG_PREFIX.length), 'base64'));
 });
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));

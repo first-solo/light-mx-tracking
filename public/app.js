@@ -120,6 +120,79 @@
   }
 
   // ---------- forms ----------
+  // ---------- signature pads ----------
+  // Strokes are kept as points in CSS pixels so the drawing survives the box
+  // being resized (rotating a phone, a hidden step opening) and can be
+  // re-rendered at a fixed resolution for saving.
+  function SigPad(box) {
+    const canvas = box.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let strokes = [], current = null, w = 0, h = 0;
+    const ink = (c, scale) => { c.lineWidth = 2.4 * scale; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = '#14202a'; };
+
+    function paint(c, scale) {
+      ink(c, scale);
+      for (const st of strokes) {
+        c.beginPath();
+        if (st.length === 1) { c.arc(st[0][0] * scale, st[0][1] * scale, 1.4 * scale, 0, Math.PI * 2); c.fillStyle = '#14202a'; c.fill(); continue; }
+        c.moveTo(st[0][0] * scale, st[0][1] * scale);
+        for (let i = 1; i < st.length - 1; i++) {
+          const mx = (st[i][0] + st[i + 1][0]) / 2, my = (st[i][1] + st[i + 1][1]) / 2;
+          c.quadraticCurveTo(st[i][0] * scale, st[i][1] * scale, mx * scale, my * scale);
+        }
+        const last = st[st.length - 1];
+        c.lineTo(last[0] * scale, last[1] * scale);
+        c.stroke();
+      }
+    }
+    function fit() {
+      const r = box.getBoundingClientRect();
+      if (!r.width) return;
+      const dpr = window.devicePixelRatio || 1;
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      paint(ctx, 1);
+    }
+    new ResizeObserver(fit).observe(box);
+
+    const pt = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      current = [pt(e)]; strokes.push(current);
+      box.classList.add('signed');
+      fit();
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!current) return;
+      const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+      for (const ev of evs) current.push(pt(ev));
+      ctx.clearRect(0, 0, w, h); paint(ctx, 1);
+    });
+    const end = () => { current = null; };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    box.parentElement.querySelector('.sig-clear').addEventListener('click', () => api.clear());
+
+    const api = {
+      isEmpty: () => strokes.length === 0,
+      clear() { strokes = []; current = null; box.classList.remove('signed'); fit(); },
+      toPNG() {
+        // Fixed 2x of the box size, capped so the stored image stays small.
+        const scale = Math.min(2, 1000 / w);
+        const out = document.createElement('canvas');
+        out.width = Math.round(w * scale); out.height = Math.round(h * scale);
+        paint(out.getContext('2d'), scale);
+        return out.toDataURL('image/png');
+      },
+    };
+    return api;
+  }
+  const pads = {};
+  document.querySelectorAll('.sigpad').forEach((box) => { pads[box.dataset.log] = SigPad(box); });
+
   function bindForm(formId, log, after) {
     const form = $(formId);
     const msg = form.querySelector('.msg');
@@ -127,12 +200,18 @@
       e.preventDefault();
       msg.className = 'msg'; msg.textContent = '';
       const body = Object.fromEntries(new FormData(form).entries());
+      const pad = pads[log];
+      if (pad) {
+        if (pad.isEmpty()) { msg.className = 'msg err'; msg.textContent = 'Sign in the signature box.'; return; }
+        body.signature = pad.toPNG();
+      }
       const btn = form.querySelector('button[type=submit]');
       btn.disabled = true;
       try {
         await api('/api/' + log, { method: 'POST', body });
         if (body.performed_by) saveWho(body.performed_by);
         form.querySelectorAll('input[type=number], input[name=note]').forEach((i) => { i.value = ''; });
+        if (pad) pad.clear();
         if (after) after(form);
         resetDates();
         msg.textContent = 'Saved.';
@@ -196,6 +275,9 @@
     }
   });
 
+  const signedBy = (log, row) => row.signed
+    ? `<a href="/api/${log}/${row.id}/signature.png" target="_blank" rel="noopener" title="Open signature"><img class="sig-thumb" src="/api/${log}/${row.id}/signature.png" alt="Signature of ${esc(row.performed_by)}" loading="lazy"></a>${esc(row.performed_by)}`
+    : esc(row.performed_by);
   const empty = (cols, title, text) => `<tr><td colspan="${cols}" class="empty"><strong>${title}</strong>${text}</td></tr>`;
 
   // ---------- OIL ----------
@@ -286,7 +368,7 @@
         ${c.exposed
           ? `<td class="sep">Yes</td><td>${res(c.left_result)}</td><td>${res(c.right_result)}</td>`
           : `<td class="sep">No</td><td colspan="2" class="na">Not required</td>`}
-        <td class="sep">${esc(c.performed_by)}</td>
+        <td class="sep signer">${signedBy('ad', c)}</td>
         <td class="note">${esc(c.note)}</td>
         <td>${deleteCell('ad', c.id)}</td>
       </tr>`).join('')
@@ -334,7 +416,7 @@
         <td>${esc(c.place)}</td>
         <td class="num sep">${vals[0]}</td><td class="num">${vals[1]}</td>
         <td>${ok ? '<span class="pill ok">Within ±' + limit[c.method] + '°</span>' : '<span class="pill bad">Out of tolerance</span>'}</td>
-        <td class="sep">${esc(c.performed_by)}</td>
+        <td class="sep signer">${signedBy('vor', c)}</td>
         <td class="note">${esc(c.note)}</td>
         <td>${deleteCell('vor', c.id)}</td>
       </tr>`;
